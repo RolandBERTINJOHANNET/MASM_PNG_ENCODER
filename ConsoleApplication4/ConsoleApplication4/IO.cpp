@@ -12,8 +12,8 @@ int read(const char *filename, int widthdata, int heightdata, unsigned char *dat
 int read_width_height(const char *filename, int *widthdata, int *heightdata) {
 	FILE *f;
 	if (fopen_s(&f, filename, "r"))return 0;
-	fread(heightdata, sizeof(int), 1, f);
 	fread(widthdata, sizeof(int), 1, f);
+	fread(heightdata, sizeof(int), 1, f);
 	fclose(f);
 	return 1;
 }
