@@ -1,7 +1,39 @@
 #include "cppoverhead.h"
-#include <stdio.h>
-#include <cmath>
-#include <algorithm>
+
+
+
+//decode an image encoded with lzss, lengths being indicated by a negative value instead of a flag.
+void decode(int *code, uint8_t *out, int size) {
+	int offsetOut = 0;
+	int offsetRead = 0;
+	while (offsetOut < size) {
+		int val = code[offsetRead];
+		if (val >= 0) {				//if it's just a literal
+			out[offsetOut++] = val;
+			offsetRead++;
+		}
+		else {						//in my code a negative value indicates a pattern
+			int distance = code[offsetRead + 1];
+			int diffdist = offsetOut - distance;
+			for (int i = 0; i < -val; i++) {
+				out[offsetOut++] = out[diffdist++];
+			}
+			offsetRead += 2;
+		}
+	}
+}
+
+//verify that two arrays are equal. print the result in cout
+int verify(uint8_t *orig, uint8_t *decoded, int size) {
+	for (int i = 0; i < size; i++) {
+		if (orig[i] != decoded[i]) {
+			std::cout << "error on value number : " << i << std::endl;
+			return 0;
+		}
+	}
+	std::cout << "no issues !" << std::endl;
+	return 1;
+}
 
 
 //argmin over a positive sum of int
