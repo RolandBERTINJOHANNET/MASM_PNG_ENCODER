@@ -80,12 +80,13 @@ int main()
 
 	//													testing prefix codes
 	int size;
-	int data[] = { 10,2,50,-3,2,230,-3,1 };				//some lzss-encoded data
-	uint8_t desired[] = { 58,50,98,2,31,48,29,66 };			//the desired output from prefix encoding.
-	uint8_t out[2];
-	encodeliteral(2, data, out);
+	//int data[] = { 10,2,50,-3,2,230,-3,1 };				//some lzss-encoded data
+	//uint8_t desired[] = { 58,50,98,2,31,48,29,66 };			//the desired output from prefix encoding.
+	int data[] = { -3,100,-114,230,-115,30,-257,-258 };
+	uint8_t out[10];
+	encodeliteral(8, data, out);
 	std::cout << "result of prefix encoding : " << std::endl;
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 10; i++) {
 		std::cout << (int)out[i] << ", ";
 	}std::cout<<std::endl;
 }
