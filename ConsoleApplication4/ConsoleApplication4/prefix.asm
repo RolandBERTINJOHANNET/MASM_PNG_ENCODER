@@ -2,19 +2,26 @@
 .data
 codesize BYTE 0
 code dword 0
+;arrays to facilitate encoding lengths
 binslen dword 258,227,195,163,131,115,99,83,67,59,
 			51,43,35,31,27,23,19,17,15,13,
 			11,10,9,8,7,6,5,4,3
 codeslen dword 285,284,283,282,281,280,279,278,277,276,275,274,273,
-			272,271,270,269,268,267,266,255,264,263,262,261,260,259,258,257
-
+			272,271,270,269,268,267,266,265,264,263,262,261,260,259,258,257
 extraslen byte 0,5,5,5,5,4,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1,0,0,0,0,0,0,0,0
+;arrays to facilitate encoding distances
+binsdist dword 24577,16385,12289,8193,6145,4097,3073,2049,1537,1025,769,513,385,
+				257,193,129,97,65,49,33,25,17,13,9,7,5,4,3,2,1
+codesdist dword 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+				15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,0
+extrasdist byte 13,13,12,12,11,11,10,10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0,0,0
+
 isdist byte 0		;keeps track of when we're reading a distance
 lpindex dword 0		;index for the loop over bins
 lenbuffer dword 0	;used to store the length while we use edx to get the code
 membuffer dword 0	;used to store memory adresses from esi while using esi for something else
 .code
-encodeliteral		proc					;encodes a list of lzss-processed ints with prefix codes
+prefixencode		proc					;encodes a list of lzss-processed ints with prefix codes
 			push ebp
 			mov ebp,esp
 			push ebx
@@ -61,6 +68,7 @@ lit9bit:
 			jmp advance
 
 len:		;encode a length
+			mov BYTE PTR [isdist],1				;set to 1 so that next value read is interpreted as distance
 			mov edx,0
 			sub edx,DWORD PTR [esi]				;get absolute value of length (it is retrieved negative)						!!!!!
 			cmp edx,115							;if it's above 115 it must be on 8 bits
@@ -110,14 +118,41 @@ len8bit:	;code a len on 8 bits
 			shl edx,cl							;shift edx by the number of extra bits
 			add edx,DWORD PTR [lenbuffer]		;write the length-from-binstart offset into those bits
 			add cl,8
-			mov BYTE PTR [codesize],cl			;set the codesize to 7+extrabits
+			mov BYTE PTR [codesize],cl			;set the codesize to 8+extrabits
 			jmp advance
 skipbin8b:	mov esi, DWORD PTR [membuffer]		;restore esi
 			inc ebx
 			cmp ebx,LENGTHOF binslen
 			jl @B
 
-distance:
+distance:	;encode a distance
+			mov BYTE PTR [isdist],0				;set to 0 so that next value read is interpreted as literal/length
+			mov edx,DWORD PTR [esi]				;get value of distance (it is retrieved negative)						!!!!!
+
+			;loop over the hardcoded binsdist array to find the 5-bit code and nb of extra bits
+			mov ebx,0							;use ebx to loop (start at 6 since below 115)
+@@:			mov DWORD PTR [membuffer],esi		;store esi for later retrieval
+			mov esi,OFFSET binsdist
+			cmp edx,DWORD PTR [esi+ebx*4]
+			jl skipbindst						;if not in this bin, skip to next iteration
+			sub edx,DWORD PTR [esi+ebx*4]		;if in this bin, get offset from start of bin
+			mov DWORD PTR [lenbuffer],edx
+			mov esi,OFFSET codesdist
+			mov edx,DWORD PTR [esi+ebx*4]		;at ebx-th element, we have the code for this bin
+			sub edx,256							;subtract from the code the base value from which we start counting				!!!!!
+			add edx,0							;add the base bits for this kind of code
+			mov esi,OFFSET extrasdist			;put the pointer to extraslen in esi
+			mov cl,BYTE PTR [esi+ebx]			;write the number of extra bits into cl.
+			mov esi, DWORD PTR [membuffer]		;restore esi, we're done using it to access the arrays
+			shl edx,cl							;shift edx by the number of extra bits
+			add edx,DWORD PTR [lenbuffer]		;write the length-from-binstart offset into those bits
+			add cl,5
+			mov BYTE PTR [codesize],cl			;set the codesize to 5+extrabits
+			jmp advance
+skipbindst:	mov esi, DWORD PTR [membuffer]		;restore esi
+			inc ebx
+			cmp ebx,LENGTHOF binsdist
+			jl @B
 
 
 advance:	;push the contents of edx into eax, checking each time that eax isn't full
@@ -163,5 +198,5 @@ DONE:
 			pop ebx
 			pop ebp
 			ret
-encodeliteral		endp
+prefixencode		endp
 end

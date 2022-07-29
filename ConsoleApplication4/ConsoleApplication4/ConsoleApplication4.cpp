@@ -6,7 +6,7 @@
 #include "stb_image.h"
 
 
-extern "C" int encodeliteral(int size, int *input, uint8_t *output);
+extern "C" int prefixencode(int size, int *input, uint8_t *output);
 
 //program will allocate one more line than the size indicates, and fill it with zeros
 
@@ -79,14 +79,12 @@ int main()
 	*/
 
 	//													testing prefix codes
-	int size;
-	//int data[] = { 10,2,50,-3,2,230,-3,1 };				//some lzss-encoded data
 	//uint8_t desired[] = { 58,50,98,2,31,48,29,66 };			//the desired output from prefix encoding.
-	int data[] = { -3,100,-114,230,-115,30,-257,-258 };
-	uint8_t out[10];
-	encodeliteral(8, data, out);
+	int data[] = { 215,3,-172,30112,-30,15151,-257,258 };				//some lzss-encoded data
+	uint8_t out[13];
+	prefixencode(8, data, out);
 	std::cout << "result of prefix encoding : " << std::endl;
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 13; i++) {
 		std::cout << (int)out[i] << ", ";
 	}std::cout<<std::endl;
 }
