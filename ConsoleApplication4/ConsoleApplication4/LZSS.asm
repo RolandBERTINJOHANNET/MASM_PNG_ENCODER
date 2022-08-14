@@ -80,8 +80,8 @@ pattern:
 		mov eax,[ebp+8]
 		sub eax,DWORD PTR [curlen]
 		sub eax,ebx
-		cmp eax,0								;check that we aren't reading past the end offset (that eax >0)
-		jl outerloop								;if we're over the limit, write whatever pattern we have as it reaches the end, then exit (ecx will be 0)
+		cmp eax,0								;check that we aren't about to read past the end offset (that eax >0)
+		jle outerloop								;if we're over the limit, write whatever pattern we have as it reaches the end, then exit (ecx will be 0)
 		cmp DWORD PTR [curlen],258
 		jl pattern						;continue if under 258 (the max len as defined in RFC 1951)
 		jmp lookback					;if we get through the conditions, we must skip the esi adjustment at nomatch
@@ -133,10 +133,10 @@ writelit:				;case 2 :write just the literal
 		mov DWORD PTR [curdist],0				
 		mov DWORD PTR [bestdist],0
 		cmp ecx,0
-		ja lp
+		jg lp
 
 done:
-		mov eax,dword ptr [offsetout]		;return how far into the array we came
+		mov eax,dword ptr [offsetout]		;return how far into the array we came (how long the output is)
 		pop esi
 		pop edi
 		pop ebx
